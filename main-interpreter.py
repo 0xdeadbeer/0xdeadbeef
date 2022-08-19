@@ -4,7 +4,7 @@ import os
 import sys
 
 # global variables
-DEFAULT_FILE_LOCATION = "./programs/variables.deadbeef"
+DEFAULT_FILE_LOCATION = "./programs/expressions.deadbeef"
 
 # global functions
 def err(string): 
@@ -13,14 +13,69 @@ def err(string):
 def info(string):
     print (f"[0xdeadbeef info]: {string}")
 
+def int_to_hex_string(number): 
+    return "0x" + "{:08x}".format(number).upper()
+
 def func_output(location, name, message):
-    location = "0x{:08x}".format(location).upper() 
+    location = int_to_hex_string(location)
     print (f"[{location} {name}] {message}")
 
+# interpreter global functions 
+def add(params):
+    first = params[0]
+    second = params[1]
+
+    return ( int(first) + int(second) )
+
+def sub(params): 
+    first = params[0]
+    second = params[1]
+
+    return ( int(first) - int(second) )
+
+def mul(params): 
+    first = params[0]
+    second = params[1]
+
+    return ( int(first) * int(second) )
+
+def div(params): 
+    first = params[0]
+    second = params[1] 
+
+    return ( int(first) / int(second) )
+
 # interpreter global variables
-INTERPRETER_VARIABLES = {}
+INTERPRETER_VARIABLES = { }
+OPERATIONS = {
+    "add": add,
+    "sub": sub,
+    "mul": mul,
+    "div": div,
+}
 
 # interpreter global functions 
+def pull_value(origin): 
+    if (origin[0] == "!"): # its a variable
+        if (origin[1:] not in INTERPRETER_VARIABLES):
+            err(f"No variable named '{origin[1:]}' found")
+            return None 
+
+        return INTERPRETER_VARIABLES[origin[1:]] 
+    else:
+        return origin
+
+def push_value(destination, value, new=False): 
+    if (destination[0] != "!"):
+        err(f"Can only push values inside variables!")
+        return
+
+    if (destination[1:] not in INTERPRETER_VARIABLES and not new):
+        err(f"No variable named '{destination[1:]}' found")
+        return 
+
+    INTERPRETER_VARIABLES[destination[1:]] = value 
+
 def printdb(parameters, interpreter): 
     string = parameters[0]
 
@@ -30,11 +85,7 @@ def printdb(parameters, interpreter):
 def printvar(parameters, interpreter):
     name = parameters[0]
 
-    if (name not in INTERPRETER_VARIABLES):
-        err(f"No variable named {name}")
-        return 
-
-    variable_val = INTERPRETER_VARIABLES[name]
+    variable_val = pull_value(name)
     func_output(interpreter.cursor, "printvar", f"'{name}'={variable_val}")
     interpreter.increase_cursor()
 
@@ -42,25 +93,40 @@ def setvar(parameters, interpreter):
     name = parameters[0]
     value = parameters[1]
 
-    if (name in INTERPRETER_VARIABLES):
-        err(f"Variable with name '{name}' already exists")
-        return 
+    push_value(name, value, True) 
 
-    INTERPRETER_VARIABLES[name] = value
+    interpreter.increase_cursor()
+
+def execute_operation(first_val, second_val, operation): 
+    if (operation not in OPERATIONS):
+        err(f"No operation called '{operation}' found")
+        return None
+
+    return OPERATIONS[operation]([first_val, second_val])
+    
+def basic_expressions(parameters, interpreter): 
+    
+    first_val = parameters[0]
+    second_val = parameters[1]
+    operation = parameters[2]
+    output_var = parameters[3]
+
+    first_val = pull_value(first_val)
+    second_val = pull_value(second_val) 
+    output = execute_operation(first_val, second_val, operation)
+    push_value(output_var, output)
+
     interpreter.increase_cursor()
 
 
 # interpreter global variables
 SYSCALLS = {
-        0: { 
-            "func": printdb, 
-        },
-        1: {
-            "func": setvar,
-        },
-        2: {
-            "func": printvar, 
-        }
+        
+        0x00: { "func": printdb }, 
+        0x01: { "func": setvar },
+        0x02: { "func": printvar },
+        
+        0x11: { "func": basic_expressions },
 }
 
 # interpreter classes
@@ -123,7 +189,7 @@ class DBInterpreter:
             return 
 
         if (self.cursor not in self.commands_map.map):
-            info(f"Program exited at {str(self.cursor)}")
+            info(f"Program exited at {int_to_hex_string(self.cursor)}")
             self.exit = True
             return 
         
