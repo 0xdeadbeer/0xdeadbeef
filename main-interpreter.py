@@ -5,7 +5,6 @@ import sys
 
 # global variables
 DEFAULT_FILE_LOCATION = "./programs/first.deadbeef"
-DEBUG = False 
 
 # global functions
 def err(string): 
@@ -100,15 +99,11 @@ class DBInterpreter:
 # main function
 def main():
     file_location = input("Enter location of program to interpret: ")
-    debug = input("Debug mode [true/false]: ")
-
     file_location = file_location.strip() 
-    debug = debug.strip() 
 
     if (file_location == ""):
         file_location = DEFAULT_FILE_LOCATION
 
-    DEBUG = True if debug == "true" else False
     deadbeef_file = open(file_location, "r")
     commands_map = CommandsMap()
     for command in deadbeef_file:
