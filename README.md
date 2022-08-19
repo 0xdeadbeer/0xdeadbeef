@@ -1,4 +1,4 @@
-# 0xDeadBeef
+# 0xdeadbeef
 
 > Made by: <a href="https://github.com/osamu-kj/">Osamu-KJ</a>
 
