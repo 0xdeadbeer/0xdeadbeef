@@ -3,8 +3,8 @@
 <i><a href="../programs/variables.deadbeef">variables.deadbeef</a></i>
 ```
 0x000000F0 0x00 hello world!
-0x000000F1 0x01 a|10
-0x000000F2 0x02 a
+0x000000F1 0x01 !a|10
+0x000000F2 0x02 !a
 ```
 
 The first command simply output "hello world!" to the screen just like in the previous example.
