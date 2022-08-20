@@ -24,3 +24,7 @@ def setvar(parameters, interpreter):
 
     push_value(name, value, True) 
     interpreter.increase_cursor()
+
+def program_exit(parameters, interpreter): 
+    interpreter.exit = True 
+    interpreter.increase_cursor()

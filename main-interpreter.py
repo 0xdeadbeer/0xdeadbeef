@@ -5,13 +5,31 @@ import sys
 from lib import * 
 
 # global variables
-DEFAULT_FILE_LOCATION = "./programs/expressions.deadbeef"
+DEFAULT_FILE_LOCATION = "./programs/functions.deadbeef"
 SYSCALLS = {
     0x00: printdb,
     0x01: setvar, 
     0x02: printvar, 
 
     0x11: basic_expressions,
+
+    0x23: ret_function,
+    0x24: call_function,
+    0x25: open_function, 
+
+    0xFF: program_exit,
+}
+
+'''
+    EXCLUDE_SYSCALL_AREAS Note: 
+        syscall: [ 'ignore the current syscall also', 'value for the exclude variable' ]
+        ignore the current syscall also: 
+            - 0x00: no 
+            - 0x01: yes
+'''
+EXCLUDE_SYSCALL_AREAS = {
+    0x23: [ 0x00, False ], 
+    0x25: [ 0x01, True ], 
 }
 
 # interpreter classes
@@ -52,7 +70,10 @@ class DBInterpreter:
         self.commands_map = commands_map
         self.exit = False
         self.syscalls = SYSCALLS 
-    
+        self.excluded_areas = EXCLUDE_SYSCALL_AREAS
+        self.excluding = False 
+        self.infunction = False  
+
     def set_cursor(self, new_value):
         self.cursor = new_value
         self.execute()
@@ -65,8 +86,8 @@ class DBInterpreter:
         new_cursor = self.cursor - x
         self.set_cursor(new_cursor)
 
-    def fetch_cursor(self):
-        return self.cursor
+    def fetch_cursor(self, x=0):
+        return (self.cursor + x) 
     
     def execute(self):
         if (self.exit):
@@ -77,11 +98,24 @@ class DBInterpreter:
             info(f"Program exited at {int_to_hex_string(self.cursor)}")
             self.exit = True
             return 
-        
+
         # execute command 
         cursor_command = self.commands_map.fetch_command(self.cursor)
         cursor_syscall = cursor_command.syscall
         parameters = cursor_command.parameters
+        
+        # func_output(self.cursor, "DEBUG", f"executing command {cursor_command}")
+        if (cursor_syscall in self.excluded_areas):
+            excluding_value = self.excluded_areas[cursor_syscall][0]
+
+            self.excluding = excluding_value 
+            if (self.excluded_areas[cursor_syscall][1] == 0x0 and not self.infunction):
+                self.increase_cursor()
+                return 
+
+        elif (self.excluding):
+            self.increase_cursor()
+            return
         self.syscalls[cursor_syscall](parameters, self)
 
 # main function
