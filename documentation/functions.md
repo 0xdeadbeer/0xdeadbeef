@@ -9,11 +9,13 @@
 0x000000F4 0x24 $function_name
 ```
 
-Definining functions in <a href="../README.md">0xdeadbeef</a> is really easy.. You have a syscall to mark the start of a function and a syscall to mark the end of a function (aka when should i return back from where it was called).
+Definining functions in <a href="../README.md">0xdeadbeef</a> is really easy.. You have a syscall to mark the start of a function and a syscall to mark the end of a function (aka when should it return back from where it was called).
 
-Meet `0x25` and `0x23`. The first syscall is a function opener and it says that any command following this one, is going to be a function's code. `0x23` on the other hand though, is like a return instruction in assembly (if you're familiar with assembly). Once executed the execution cursor is going to return to the command from where the function was called and continue the execution from there (to put it simply... exit the function)
+Meet `0x25` and `0x23`. The first syscall is a function opener and it says that any command following this one, is going to be some function's code. `0x23` on the other hand though, is like a return instruction in assembly (if you're familiar with assembly). Once executed the execution cursor is going to return to the command from where the function was called and continue the execution from there (to put it simply... exit the function)
 
 The third syscall is the calling syscall `0x24`. This one simply takes in the name of the function you want to call, and calls it. It also registers a new record inside the interpreter's stack so that the `0x23` later will know from where it was called.
+
+> <b>Note: </b> Function names MUST be referred to with a '$' at the beginning. The interpreter uses such naming rules to identify what the name refers to (a function, a variable, a string, etc.)
 
 <i><a href="../programs/function-nesting.deadbeef">function-nesting.deadbeef</a></i>
 ```
