@@ -23,5 +23,3 @@ def basic_expressions(params, interpreter):
     second_val = pull_value(second_val)
     output = execute_operation(first_val, second_val, operation)
     push_value(output_var, output) 
-
-    interpreter.increase_cursor() 

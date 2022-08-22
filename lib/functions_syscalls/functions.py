@@ -37,6 +37,7 @@ def call_function(params, interpreter):
     func_output(real_call_addr, "Call function", f"Jumping to function '{function_name}' with address '{int_to_hex_string(function_addr)}'")
     dash_stack([[function_name, function_addr], call_addr])
     interpreter.set_cursor(function_addr)
+    interpreter.execute() 
 
 def open_function(params, interpreter): 
     function_name = params[0]
@@ -57,8 +58,6 @@ def open_function(params, interpreter):
     LOADED_FUNCTIONS_BYADDR[function_addr] = function_name
     LOADED_FUNCTIONS_BYNAME[function_name] = function_addr
 
-    interpreter.increase_cursor() 
-
 def ret_function(params, interpreter):
     if (len(CALL_STACK) <= 1):
         interpreter.infunction = False
@@ -69,3 +68,4 @@ def ret_function(params, interpreter):
 
     func_output(interpreter.fetch_cursor(), "Ret function", f"Jumping out of the function to address '{int_to_hex_string(return_addr)}'")
     interpreter.set_cursor(return_addr)
+    interpreter.execute()

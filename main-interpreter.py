@@ -5,7 +5,7 @@ import sys
 from lib import * 
 
 # global variables
-DEFAULT_FILE_LOCATION = "./programs/functions.deadbeef"
+DEFAULT_FILE_LOCATION = "./programs/loops.deadbeef"
 SYSCALLS = {
     0x00: printdb,
     0x01: setvar, 
@@ -16,6 +16,9 @@ SYSCALLS = {
     0x23: ret_function,
     0x24: call_function,
     0x25: open_function, 
+
+    0x31: open_loop,
+    0x32: close_loop,
 
     0xFF: program_exit,
 }
@@ -76,7 +79,7 @@ class DBInterpreter:
 
     def set_cursor(self, new_value):
         self.cursor = new_value
-        self.execute()
+        # self.execute()
 
     def increase_cursor(self, x=1):
         new_cursor = self.cursor + x
@@ -110,11 +113,9 @@ class DBInterpreter:
 
             self.excluding = excluding_value 
             if (self.excluded_areas[cursor_syscall][1] == 0x0 and not self.infunction):
-                self.increase_cursor()
                 return 
 
         elif (self.excluding):
-            self.increase_cursor()
             return
         self.syscalls[cursor_syscall](parameters, self)
 
@@ -148,7 +149,9 @@ def main():
         # print (f" - address: {address}, syscall: {syscall}, parameters: {str(parameters)}")
 
     interpreter = DBInterpreter(commands_map) 
-    interpreter.execute()
+    while interpreter.exit != True:
+        interpreter.execute()
+        interpreter.increase_cursor()
 
 
 if __name__ == "__main__":
