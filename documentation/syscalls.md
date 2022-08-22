@@ -43,3 +43,14 @@ Those go from `0x21` to `0x30`
     - 1 parameter: the name of the function
   - `0x25`: Syscall to open a function, commands folling are considered the function's code (1 parameter):
     - 1 parameter: name of the function 
+
+### Loops 
+
+Those go from `0x31` to `0x31`
+
+  - `0x31`: Syscall to open a loop, (3 parameters)
+    - 1 parameter: name of the ending label 
+    - 2 parameter: times it will loop 
+    - 3 parameter: the variable that will hold the index
+  - `0x32`: Syscall to close a loop, (1 parameter)
+    - 1 parameter: name of the ending label
