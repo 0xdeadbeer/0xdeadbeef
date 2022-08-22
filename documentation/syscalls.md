@@ -46,7 +46,7 @@ Those go from `0x21` to `0x30`
 
 ### Loops 
 
-Those go from `0x31` to `0x31`
+Those go from `0x31` to `0x41`
 
   - `0x31`: Syscall to open a loop, (3 parameters)
     - 1 parameter: name of the ending label 
