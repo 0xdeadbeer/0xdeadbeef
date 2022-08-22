@@ -60,7 +60,8 @@ def open_function(params, interpreter):
     interpreter.increase_cursor() 
 
 def ret_function(params, interpreter):
-    interpreter.infunction = False
+    if (len(CALL_STACK) <= 1):
+        interpreter.infunction = False
 
     call_record = fetch_stack()
     slide_stack()
