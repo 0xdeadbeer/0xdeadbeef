@@ -20,7 +20,7 @@ SYSCALLS = {
     0x31: open_loop,
     0x32: close_loop,
 
-    # 0xFE: import_call,
+    0xFE: import_call,
     0xFF: program_exit,
 }
 
@@ -77,6 +77,7 @@ class DBInterpreter:
         self.excluded_areas = EXCLUDE_SYSCALL_AREAS
         self.excluding = False 
         self.infunction = False  
+        self.environments = { } 
 
     def set_cursor(self, new_value):
         self.cursor = new_value
@@ -92,7 +93,15 @@ class DBInterpreter:
 
     def fetch_cursor(self, x=0):
         return (self.cursor + x) 
-    
+
+    def add_environment(self, location):
+        location = os.path.abspath(location)
+        if (location in self.environments):
+            return False 
+
+        self.environments[location] = True 
+        return True 
+     
     def execute(self):
         if (self.exit):
             err("Cannot execute code, program exited already!")
@@ -120,9 +129,26 @@ class DBInterpreter:
             return
         self.syscalls[cursor_syscall](parameters, self)
 
+def print_banner(): 
+    print ("  ___          _                _ _                __")
+    print (" / _ \\__  ____| | ___  __ _  __| | |__   ___  ___ / _|")
+    print ("| | | \\ \\/ / _` |/ _ \\/ _` |/ _` | '_ \\ / _ \\/ _ \\ |_")
+    print ("| |_| |>  < (_| |  __/ (_| | (_| | |_) |  __/  __/  _|")
+    print (" \\___//_/\\_\\__,_|\\___|\\__,_|\\__,_|_.__/ \\___|\\___|_|")
+    print ("")
+
+def help_page(): 
+    print_banner()
+    print ("Coded by: https://github.com/osamu-kj/")
+    print ("Usage: python3 interpreter.py file_to_interpret")
+    print ("Example: python3 main-interpreter.py ./programs/hello-world.deadbeef")
+
 # main function
 def main():
-    file_location = input("Enter location of program to interpret: ")
+    if (len(sys.argv) != 2): 
+        help_page() 
+        return 
+    file_location = sys.argv[1]
     file_location = file_location.strip() 
 
     if (file_location == ""):
@@ -150,6 +176,11 @@ def main():
         # print (f" - address: {address}, syscall: {syscall}, parameters: {str(parameters)}")
 
     interpreter = DBInterpreter(commands_map) 
+    
+    # initialize
+    interpreter.add_environment(deadbeef_file.name)
+
+    # start executing the code in the main file
     while interpreter.exit != True:
         interpreter.execute()
         interpreter.increase_cursor()
