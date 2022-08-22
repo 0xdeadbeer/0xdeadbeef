@@ -20,6 +20,7 @@ SYSCALLS = {
     0x31: open_loop,
     0x32: close_loop,
 
+    # 0xFE: import_call,
     0xFF: program_exit,
 }
 
