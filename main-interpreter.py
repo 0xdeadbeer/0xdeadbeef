@@ -2,6 +2,7 @@
 
 import os 
 import sys
+import hashlib
 from lib import * 
 
 # global variables
@@ -95,9 +96,15 @@ class DBInterpreter:
         return (self.cursor + x) 
 
     def add_environment(self, location):
+        global ENVIRONMENT 
+
         location = os.path.abspath(location)
-        if (location in self.environments):
-            return False 
+        bytes_location = bytes(location, encoding="utf-8")
+        environment_hash = hashlib.sha512(bytes_location).hexdigest()
+
+        if (environment_hash not in self.environments):
+            new_file_environment = ENVIRONMENT(location)
+            self.environments[environment_hash] = new_file_environment
 
         self.environments[location] = True 
         return True 

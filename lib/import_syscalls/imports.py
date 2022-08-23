@@ -7,6 +7,6 @@ def import_call(params, interpreter):
     if (not interpreter.add_environment(file)): 
         err(f"Cannot import file {file} if it already exists in the interpreter's environments")
         return 
-
+    
     file = open(os.path.abspath(file), "r")
 
