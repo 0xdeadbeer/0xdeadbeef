@@ -21,7 +21,6 @@ SYSCALLS = {
     0x31: open_loop,
     0x32: close_loop,
 
-    0xFE: import_call,
     0xFF: program_exit,
 }
 
@@ -38,6 +37,37 @@ EXCLUDE_SYSCALL_AREAS = {
 }
 
 # interpreter classes
+
+class CONNECTION: 
+    def __init__(self, location, hash): 
+        self.location = location 
+        self.hash = hash
+
+GLOBAL_ENVIRONMENTS = {}
+
+class ENVIRONMENT: 
+    def __init__(self, location): 
+        self.location = location
+
+        location_bytes = bytes(location, encoding="utf-8")
+        hash = hashlib.sha512(location_bytes).hexdigest() 
+        self.hash = hash 
+        self.connections = {}
+
+    def add_connection(self, interpreter, location, hash=None): 
+        if (hash is None): 
+            location_bytes = bytes(location, encoding="utf-8")
+            hash = hashlib.sha512(location_bytes).hexdigest() 
+        
+        if (hash in self.connections): 
+            return False 
+
+        connection_obj = CONNECTION(location, hash)
+        self.connections[hash] = connection_obj
+
+        context_directory = os.path.dirname(os.path.realpath(open(self.location, "r").name))
+        interpreter.run_file(location, directory=context_directory)
+
 class Command:
     def __init__(self, address, syscall, parameters):
         self.address = address
@@ -72,6 +102,7 @@ class CommandsMap:
 class DBInterpreter:
     def __init__ (self, commands_map):
         self.cursor = 0x000000F0
+        self.end_cursor = 0x000000F0
         self.commands_map = commands_map
         self.exit = False
         self.syscalls = SYSCALLS 
@@ -96,8 +127,6 @@ class DBInterpreter:
         return (self.cursor + x) 
 
     def add_environment(self, location):
-        global ENVIRONMENT 
-
         location = os.path.abspath(location)
         bytes_location = bytes(location, encoding="utf-8")
         environment_hash = hashlib.sha512(bytes_location).hexdigest()
@@ -106,9 +135,8 @@ class DBInterpreter:
             new_file_environment = ENVIRONMENT(location)
             self.environments[environment_hash] = new_file_environment
 
-        self.environments[location] = True 
-        return True 
-     
+        return environment_hash 
+
     def execute(self):
         if (self.exit):
             err("Cannot execute code, program exited already!")
@@ -136,6 +164,45 @@ class DBInterpreter:
             return
         self.syscalls[cursor_syscall](parameters, self)
 
+    def run_file(self, location, directory=None):
+        global import_file
+        if (directory is not None): 
+            location = os.path.join(directory, location) 
+
+        file_hash = self.add_environment(location)  
+        with open(self.environments[file_hash].location, "r") as file_descriptor: 
+            for line, command in enumerate(file_descriptor):
+                command = command.strip()
+                command = command.split(" ")
+
+                if (command[0] == "!!"):
+                    file = command[1]
+                    self.environments[file_hash].add_connection(self, file) 
+                else:
+                    address = command[0]
+                    syscall = command[1]
+                    parameters = []
+
+                    if (len(command) > 2):
+                        parameters_string = " ".join(command[2:])
+                        parameters = parameters_string.split("|")
+
+                    address = int(address, 16)
+                    syscall = int(syscall, 16)
+            
+                    # calculate the absolute 'virtual' memory address
+                    address = self.end_cursor + line
+
+                    command = Command(address, syscall, parameters) 
+                    self.commands_map.insert_command(command)
+
+        with open(self.environments[file_hash].location, "r") as file_descriptor:
+            # update the end_cursor 
+            end_address = file_descriptor.readlines()[-1]
+            end_address = end_address.strip().split(" ")
+            end_address = int(end_address[0], 16) 
+            self.end_cursor = end_address
+
 def print_banner(): 
     print ("  ___          _                _ _                __")
     print (" / _ \\__  ____| | ___  __ _  __| | |__   ___  ___ / _|")
@@ -161,32 +228,12 @@ def main():
     if (file_location == ""):
         file_location = DEFAULT_FILE_LOCATION
 
-    deadbeef_file = open(file_location, "r")
     commands_map = CommandsMap()
-    for command in deadbeef_file:
-        command = command.strip()
-        command = command.split(" ")
-
-        address = command[0]
-        syscall = command[1]
-        parameters = []
-
-        if (len(command) > 2):
-            parameters_string = " ".join(command[2:])
-            parameters = parameters_string.split("|")
-        
-        address = int(address, 16)
-        syscall = int(syscall, 16)
-        command = Command(address, syscall, parameters)
-        commands_map.insert_command(command)
-
-        # print (f" - address: {address}, syscall: {syscall}, parameters: {str(parameters)}")
-
-    interpreter = DBInterpreter(commands_map) 
     
     # initialize
-    interpreter.add_environment(deadbeef_file.name)
-
+    interpreter = DBInterpreter(commands_map) 
+    interpreter.run_file(file_location)
+    
     # start executing the code in the main file
     while interpreter.exit != True:
         interpreter.execute()
